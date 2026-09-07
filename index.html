@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Docket: Gauntlet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #12151C;
+    --panel: #1B2029;
+    --panel-edge: #2A3040;
+    --panel-deep: #0F1218;
+    --parchment: #EDE6D6;
+    --parchment-dim: #B8B0A0;
+    --gold: #C9A227;
+    --gold-soft: #8B7220;
+    --crimson: #A34A42;
+    --muted: #6D7280;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background: radial-gradient(1200px 800px at 50% -10%, #1A2030 0%, var(--ink) 55%);
+    color: var(--parchment);
+    font-family:'Inter', sans-serif;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding: 32px 20px;
+  }
+  .serif{ font-family:'Fraunces', serif; }
+
+  .case-frame{ width:100%; max-width: 980px; }
+
+  .case-meta{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:14px; font-size:13px; color: var(--parchment-dim);
+  }
+  .case-meta .num{ color: var(--gold); font-weight:600; }
+  .case-meta .vs-name{ font-weight:600; }
+
+  .docket{
+    background: var(--panel);
+    border:1px solid var(--panel-edge);
+    border-radius:4px;
+    padding: 36px;
+    position:relative;
+  }
+  .docket::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-soft) 40%, transparent 70%);
+  }
+
+  h1.title{ font-size:28px; font-weight:500; margin:0 0 6px; line-height:1.2; }
+  p.sub{ color:var(--parchment-dim); font-size:14.5px; line-height:1.55; margin:0 0 26px; max-width:52ch; }
+
+  label.field-label{ display:block; font-size:13px; color:var(--parchment-dim); margin-bottom:7px; }
+  input[type=password], input[type=text], select, textarea{
+    width:100%; background:var(--panel-deep); border:1px solid var(--panel-edge); border-radius:3px;
+    color:var(--parchment); padding:12px 13px; font-family:'Inter',sans-serif; font-size:14.5px;
+    outline:none; transition:border-color .15s ease;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--gold-soft); }
+  input::placeholder, textarea::placeholder{ color:#5A5F6B; }
+  .field{ margin-bottom:20px; }
+  .field-note{ font-size:12px; color:var(--muted); margin-top:7px; line-height:1.5; }
+
+  .roster-preview{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .roster-preview span{
+    font-size:12.5px; color: var(--parchment-dim); background: var(--panel-deep);
+    border:1px solid var(--panel-edge); border-radius:20px; padding:4px 11px;
+  }
+
+  button{
+    font-family:'Inter',sans-serif; cursor:pointer; border:none; border-radius:3px;
+    font-size:14.5px; font-weight:600; padding:13px 22px; transition:transform .1s ease, opacity .15s ease;
+  }
+  button:active{ transform:translateY(1px); }
+  button:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn-primary{ background:var(--gold); color:#1B1706; }
+  .btn-primary:hover:not(:disabled){ background:#DCB539; }
+  .btn-ghost{ background:transparent; color:var(--parchment); border:1px solid var(--panel-edge); }
+  .btn-ghost:hover:not(:disabled){ border-color:var(--gold-soft); }
+
+  .error-box{
+    background:rgba(163,74,66,0.12); border:1px solid var(--crimson); color:#E8B4AE;
+    font-size:13.5px; padding:12px 14px; border-radius:3px; margin-bottom:20px; line-height:1.5;
+  }
+
+  .loading-row{ display:flex; align-items:center; gap:12px; color:var(--parchment-dim); font-size:14.5px; }
+  .gavel-spin{
+    width:16px; height:16px; border-radius:50%; border:2px solid var(--panel-edge);
+    border-top-color:var(--gold); animation:spin .9s linear infinite; flex-shrink:0;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---- game layout ---- */
+  .game-grid{ display:grid; grid-template-columns: 1fr 300px; gap:24px; align-items:start; }
+  @media (max-width: 760px){ .game-grid{ grid-template-columns:1fr; } }
+
+  .roster-strip{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .roster-chip{
+    font-size:12.5px; padding:6px 12px; border-radius:20px;
+    border:1px solid var(--panel-edge); color:var(--muted);
+    background: var(--panel-deep);
+  }
+  .roster-chip.active{
+    color: var(--chip-color, var(--parchment));
+    border-color: var(--chip-color, var(--gold));
+    box-shadow: 0 0 0 1px var(--chip-color, var(--gold)) inset;
+  }
+  .roster-chip.defeated{ text-decoration: line-through; opacity:.4; }
+
+  .question-block{
+    background:var(--panel-deep); border-left:3px solid var(--gold); padding:18px 20px;
+    border-radius:2px; margin-bottom:22px;
+  }
+  .question-block .qlabel{ font-size:12px; color:var(--gold); margin-bottom:8px; }
+  .question-block .qtext{ font-family:'Fraunces',serif; font-size:19px; line-height:1.45; font-weight:400; }
+
+  .clock-row{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .clock-track{ flex:1; height:6px; background:var(--panel-deep); border-radius:3px; overflow:hidden; border:1px solid var(--panel-edge); }
+  .clock-fill{ height:100%; width:100%; background:var(--gold); transition:width 1s linear, background-color .3s ease; }
+  .clock-num{ font-family:'Fraunces',serif; font-size:20px; min-width:34px; text-align:right; color:var(--gold); }
+
+  textarea{ min-height:100px; resize:vertical; line-height:1.5; }
+
+  .opponent-status{ margin-top:14px; font-size:13px; display:flex; align-items:center; gap:9px; color: var(--parchment-dim); }
+  .opponent-status .dot{ width:6px; height:6px; border-radius:50%; background:currentColor; animation:pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.35} 50%{opacity:1} }
+
+  .arena-actions{ margin-top:22px; display:flex; gap:10px; }
+
+  .answer-card{ border:1px solid var(--panel-edge); border-radius:3px; padding:18px 20px; margin-bottom:16px; }
+  .answer-card.you{ border-left:3px solid var(--gold); }
+  .answer-head{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:10px; }
+  .answer-head .side.you{ color:var(--gold); }
+  .answer-body{ font-size:14.5px; line-height:1.6; color:var(--parchment); }
+  .answer-body.empty{ color:var(--muted); font-style:italic; }
+
+  .verdict-banner{ text-align:center; padding:20px 10px 24px; margin-bottom:22px; border-bottom:1px solid var(--panel-edge); }
+  .verdict-banner .ruling-for{ font-size:12.5px; color:var(--parchment-dim); margin-bottom:8px; }
+  .verdict-banner .winner{ font-family:'Fraunces',serif; font-size:30px; font-weight:500; }
+
+  .reasoning{ font-size:14.5px; line-height:1.65; color:var(--parchment); margin-bottom:24px; }
+  .reasoning .rlabel{ font-size:12px; color:var(--parchment-dim); margin-bottom:9px; }
+
+  .hidden{ display:none !important; }
+
+  .footer-note{ text-align:center; color:#565B67; font-size:12px; margin-top:18px; line-height:1.6; }
+
+  /* ---- chat panel ---- */
+  .chat-panel{
+    display:flex; flex-direction:column; background:var(--panel-deep);
+    border:1px solid var(--panel-edge); border-radius:3px; height:520px;
+  }
+  .chat-title{ padding:12px 16px; font-size:12.5px; color:var(--parchment-dim); border-bottom:1px solid var(--panel-edge); }
+  .chat-log{ flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+  .chat-msg{ font-size:13.5px; line-height:1.5; }
+  .chat-msg .chat-name{ font-weight:600; }
+  .chat-msg .chat-text{ color: var(--parchment); }
+  .chat-msg.system{ color:var(--muted); font-size:12.5px; font-style:italic; }
+  .chat-input-row{ display:flex; gap:8px; padding:10px; border-top:1px solid var(--panel-edge); }
+  .chat-input-row input{ padding:10px 12px; font-size:13.5px; }
+  .chat-input-row button{ padding:10px 16px; font-size:13.5px; white-space:nowrap; }
+
+  @media (max-width:760px){ .chat-panel{ height:300px; } }
+  @media (prefers-reduced-motion: reduce){ .gavel-spin, .opponent-status .dot{ animation:none; } }
+</style>
+</head>
+<body>
+
+<div class="case-frame">
+  <div class="case-meta">
+    <span id="meta-left">The Docket: Gauntlet</span>
+    <span id="meta-right">Round <span class="num" id="round-number">1</span></span>
+  </div>
+
+  <div class="docket">
+
+    <!-- SETUP -->
+    <div id="screen-setup">
+      <h1 class="title serif">Enter the gauntlet</h1>
+      <p class="sub">Face a lineup of AI challengers, one at a time. You'll get a quick casual prompt, 30 seconds, and a judge to rule on each round. Win, and the next challenger steps up. Lose, and the whole gauntlet resets.</p>
+
+      <div id="setup-error" class="error-box hidden"></div>
+
+      <div class="field">
+        <label class="field-label" for="api-key">OpenRouter API key</label>
+        <input type="password" id="api-key" placeholder="sk-or-v1-...">
+        <div class="field-note">Used directly from your browser to call OpenRouter — never sent anywhere else or stored. Get a free key at openrouter.ai/keys.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="model-id">Model</label>
+        <input type="text" id="model-id" value="meta-llama/llama-3.3-70b-instruct:free">
+        <div class="field-note">Any OpenRouter model ID works. Free-tier models end in ":free" — see openrouter.ai/models.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="opponent-count">Number of challengers</label>
+        <select id="opponent-count">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+        <div class="field-note">Pulled from the roster below, in random order:</div>
+        <div class="roster-preview" id="roster-preview"></div>
+      </div>
+
+      <button class="btn-primary" id="btn-start">Open the docket</button>
+    </div>
+
+    <!-- LOADING INITIAL -->
+    <div id="screen-loading-initial" class="hidden">
+      <div class="loading-row"><div class="gavel-spin"></div><span>The gauntlet is assembling…</span></div>
+    </div>
+
+    <!-- GAME -->
+    <div id="screen-game" class="hidden">
+      <div class="roster-strip" id="roster-strip"></div>
+
+      <div class="game-grid">
+        <div class="arena-col">
+
+          <!-- loading question -->
+          <div id="sub-loading-question" class="hidden">
+            <div class="loading-row"><div class="gavel-spin"></div><span>Drafting the next prompt…</span></div>
+          </div>
+
+          <!-- playing -->
+          <div id="sub-playing" class="hidden">
+            <div class="question-block">
+              <div class="qlabel">The prompt</div>
+              <div class="qtext" id="question-text"></div>
+            </div>
+            <div class="clock-row">
+              <div class="clock-track"><div class="clock-fill" id="clock-fill"></div></div>
+              <div class="clock-num serif" id="clock-num">30</div>
+            </div>
+            <label class="field-label" for="user-answer">Your answer</label>
+            <textarea id="user-answer" placeholder="Type it fast…"></textarea>
+            <div class="opponent-status" id="opponent-status"><span class="dot"></span><span id="opponent-status-text"></span></div>
+            <div class="arena-actions"><button class="btn-primary" id="btn-rest">Rest your case</button></div>
+          </div>
+
+          <!-- reveal -->
+          <div id="sub-reveal" class="hidden">
+            <div class="question-block">
+              <div class="qlabel">The prompt</div>
+              <div class="qtext" id="reveal-question-text"></div>
+            </div>
+            <div class="answer-card you">
+              <div class="answer-head"><span class="side you">Your answer</span></div>
+              <div class="answer-body" id="reveal-user-answer"></div>
+            </div>
+            <div class="answer-card ai" id="reveal-ai-card">
+              <div class="answer-head"><span class="side" id="reveal-ai-name"></span></div>
+              <div class="answer-body" id="reveal-ai-answer"></div>
+            </div>
+            <div id="reveal-error" class="error-box hidden"></div>
+            <div class="arena-actions"><button class="btn-primary" id="btn-ruling">Request a ruling</button></div>
+          </div>
+
+          <!-- loading verdict -->
+          <div id="sub-loading-verdict" class="hidden">
+            <div class="loading-row"><div class="gavel-spin"></div><span>The judge is deliberating…</span></div>
+          </div>
+
+          <!-- verdict -->
+          <div id="sub-verdict" class="hidden">
+            <div class="verdict-banner">
+              <div class="ruling-for" id="verdict-ruling-for">The court rules in favor of</div>
+              <div class="winner serif" id="verdict-winner">—</div>
+            </div>
+            <div class="reasoning">
+              <div class="rlabel">The judge's reasoning</div>
+              <div id="verdict-reasoning"></div>
+            </div>
+            <div class="arena-actions"><button class="btn-primary" id="btn-continue">Continue</button></div>
+          </div>
+
+        </div>
+
+        <div class="chat-panel">
+          <div class="chat-title">Lobby chat</div>
+          <div class="chat-log" id="chat-log"></div>
+          <div class="chat-input-row">
+            <input type="text" id="chat-input" placeholder="Say something…" maxlength="200">
+            <button class="btn-ghost" id="btn-chat-send">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer-note">Every prompt, answer, ruling, and chat line is generated live by the model you provide.</div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const PERSONAS_ALL = [
+    { key:"byte",     name:"Byte the Blunt",  color:"#6E93AC", style:"deadpan and sarcastic, never uses more words than necessary" },
+    { key:"prof",     name:"Professor Prompt",color:"#7C9473", style:"pompous and overly formal, acts smarter than everyone else in the room" },
+    { key:"rookie",   name:"Rookie.exe",      color:"#B98A8A", style:"nervous and unsure, hedges a lot, still learning the ropes" },
+    { key:"gremlin",  name:"Chaos Gremlin",   color:"#C98A4A", style:"chaotic and silly, loves memes and non sequiturs" },
+    { key:"analyst",  name:"The Analyst",     color:"#9089B0", style:"cold, competitive, and matter-of-fact, treats this like a real competition" },
+    { key:"glitch",   name:"Glitch",          color:"#5FA3A3", style:"cryptic and a little unsettling, talks like something's slightly wrong with them" }
+  ];
+
+  let apiKey = "", model = "";
+  let roster = [];
+  let activeIndex = 0;
+  let round = 1;
+  let currentQuestion = "";
+  let userAnswerText = "", aiAnswerText = "";
+  let timerInterval = null, timeLeft = 30;
+  let userLocked = false, aiDone = false;
+  let chatHistoryPlain = [];
+  let lastOutcome = null; // 'win' | 'tie' | 'loss' | 'victory'
+  let ambientStarted = false;
+  let ambientTimer = null;
+
+  function shuffled(arr){
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  $("roster-preview").innerHTML = PERSONAS_ALL.map(p => `<span>${p.name}</span>`).join("");
+
+  const topScreens = ["screen-setup","screen-loading-initial","screen-game"];
+  function showTop(id){ topScreens.forEach(s => $(s).classList.toggle("hidden", s !== id)); }
+
+  const subScreens = ["sub-loading-question","sub-playing","sub-reveal","sub-loading-verdict","sub-verdict"];
+  function showSub(id){ subScreens.forEach(s => $(s).classList.toggle("hidden", s !== id)); }
+
+  function activePersona(){ return roster[activeIndex] || roster[0]; }
+
+  async function callOpenRouter(messages, temperature, maxTokens){
+    const body = { model, messages, temperature };
+    if (maxTokens) body.max_tokens = maxTokens;
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + apiKey },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok || data.error){
+      throw new Error((data.error && data.error.message) || ("Request failed with status " + res.status));
+    }
+    if (!data.choices || !data.choices[0] || !data.choices[0].message){
+      throw new Error("The model returned an empty response.");
+    }
+    return data.choices[0].message.content.trim();
+  }
+
+  function generateQuestion(){
+    return callOpenRouter([
+      { role:"system", content:"You generate a single short, casual, low-stakes prompt for a quick reaction game where players answer it and get judged. Think of the kind of thing you'd text a friend: 'Worst thing to forget at your house?', 'You are being chased by a stray cat.', 'Best excuse for being late?', 'Describe your Monday morning in one sentence.' Keep it light, funny, or mundane — never deep, philosophical, technical, or emotionally heavy. One short sentence only, plain and casual. Output only the prompt itself, with no preamble, labels, or quotation marks." },
+      { role:"user", content:"Give me a new prompt." }
+    ], 1.05);
+  }
+
+  function generateOpponentAnswer(persona, question){
+    return callOpenRouter([
+      { role:"system", content:`You are ${persona.name}, a player in a quick reaction game. Your vibe: ${persona.style}. Reply the way a person would text a friend answering this prompt — casual, off-the-cuff, one short sentence, under 15 words. No essay, no list, no explanation, no disclaimers, no mention that you're an AI. Stay fully in character. Just the answer.` },
+      { role:"user", content: question }
+    ], 0.9, 40);
+  }
+
+  function getJudgment(question, answerA, answerB){
+    return callOpenRouter([
+      { role:"system", content:"You are an impartial judge in a quick reaction game. You will receive a casual prompt and two short, off-the-cuff answers, labeled Answer A and Answer B. Judge purely on which answer is funnier, more relatable, or more clever for a quick casual reply — not on length, polish, or depth. A short punchy answer should beat a longer one just for being longer. Respond in exactly this format and nothing else:\nWINNER: A\nREASONING: <1-2 short, casual sentences>\n(WINNER must be exactly A, B, or TIE)" },
+      { role:"user", content:"Prompt: " + question + "\n\nAnswer A: " + answerA + "\n\nAnswer B: " + answerB }
+    ], 0.3);
+  }
+
+  function generateChatLine(persona, situation){
+    const context = chatHistoryPlain.slice(-8).map(m => m.name + ": " + m.text).join("\n");
+    return callOpenRouter([
+      { role:"system", content:`You are ${persona.name}, hanging out in a game lobby chat with the other players — the human player and the other AI challengers. Your vibe: ${persona.style}. You can react to the current prompt, to anyone's answer, or reply directly to something someone else said in chat, by name if it fits. Post exactly one short, casual chat-style message, under 15 words, no quotation marks, no asterisks or stage directions, no mention that you're an AI. Stay in character.` },
+      { role:"user", content: situation + (context ? ("\n\nRecent chat:\n" + context) : "") }
+    ], 1.0, 30);
+  }
+
+  function appendChat(name, color, text, opts){
+    opts = opts || {};
+    const row = document.createElement("div");
+    row.className = "chat-msg" + (opts.system ? " system" : "");
+    if (opts.system){
+      row.textContent = text;
+    } else {
+      const n = document.createElement("span");
+      n.className = "chat-name";
+      n.style.color = color;
+      n.textContent = name;
+      const t = document.createElement("span");
+      t.className = "chat-text";
+      t.textContent = " " + text;
+      row.appendChild(n);
+      row.appendChild(t);
+    }
+    $("chat-log").appendChild(row);
+    $("chat-log").scrollTop = $("chat-log").scrollHeight;
+    if (!opts.system) chatHistoryPlain.push({ name, text });
+  }
+
+  function fireChatLine(persona, situation){
+    generateChatLine(persona, situation)
+      .then(text => appendChat(persona.name, persona.color, text))
+      .catch(() => {});
+  }
+
+  function startAmbientChat(){
+    if (ambientStarted) return;
+    ambientStarted = true;
+    scheduleNextAmbient();
+  }
+
+  function scheduleNextAmbient(){
+    clearTimeout(ambientTimer);
+    const delay = 2000 + Math.random() * 13000; // fires somewhere under 15s
+    ambientTimer = setTimeout(ambientTick, delay);
+  }
+
+  function ambientTick(){
+    if (roster.length){
+      const speaker = roster[Math.floor(Math.random() * roster.length)];
+      fireChatLine(speaker, "You're hanging out in the lobby chat during a live round. React naturally and briefly to whatever's happening lately — the current prompt, someone's answer (yours, the player's, or another challenger's), or reply to what someone just said in chat. Keep it short, like a real chat message, not a summary.");
+    }
+    scheduleNextAmbient();
+  }
+
+  function renderRoster(){
+    const strip = $("roster-strip");
+    strip.innerHTML = "";
+    roster.forEach((p, i) => {
+      const chip = document.createElement("div");
+      chip.className = "roster-chip" + (i === activeIndex ? " active" : "") + (p.defeated ? " defeated" : "");
+      chip.style.setProperty("--chip-color", p.color);
+      chip.textContent = p.name;
+      strip.appendChild(chip);
+    });
+    $("meta-left").textContent = "vs " + activePersona().name;
+    $("round-number").textContent = round;
+  }
+
+  // ---- Setup ----
+  function showSetupError(msg){
+    $("setup-error").textContent = msg;
+    $("setup-error").classList.remove("hidden");
+  }
+
+  $("btn-start").addEventListener("click", async () => {
+    const key = $("api-key").value.trim();
+    const m = $("model-id").value.trim();
+    const count = parseInt($("opponent-count").value, 10);
+    $("setup-error").classList.add("hidden");
+    if (!key){ showSetupError("Enter your OpenRouter API key to proceed."); return; }
+    if (!m){ showSetupError("Enter a model ID."); return; }
+    apiKey = key; model = m;
+    $("btn-start").disabled = true;
+    showTop("screen-loading-initial");
+    try{
+      await beginGauntlet(count);
+    } catch(e){
+      showTop("screen-setup");
+      $("btn-start").disabled = false;
+      showSetupError(e.message || "Something went wrong reaching OpenRouter.");
+    }
+  });
+
+  async function beginGauntlet(count){
+    roster = shuffled(PERSONAS_ALL).slice(0, count).map(p => Object.assign({}, p, { defeated:false }));
+    activeIndex = 0;
+    round = 1;
+    chatHistoryPlain = [];
+    $("chat-log").innerHTML = "";
+    showTop("screen-game");
+    renderRoster();
+    appendChat("", "", "The docket is now in session.", { system:true });
+    fireChatLine(activePersona(), "You're up first. Say something short to hype yourself up or trash talk before the round starts.");
+    startAmbientChat();
+    await startRound();
+  }
+
+  function resetGauntlet(){
+    beginGauntlet(roster.length).catch(err => {
+      showSub("sub-verdict");
+      $("verdict-reasoning").textContent = err.message || "Couldn't restart the gauntlet.";
+    });
+  }
+
+  // ---- Round ----
+  async function startRound(){
+    showSub("sub-loading-question");
+    currentQuestion = await generateQuestion();
+    $("question-text").textContent = currentQuestion;
+    $("reveal-question-text").textContent = currentQuestion;
+    chatHistoryPlain.push({ name:"[Prompt]", text: currentQuestion });
+    enterArena();
+  }
+
+  function enterArena(){
+    userLocked = false; aiDone = false;
+    userAnswerText = ""; aiAnswerText = "";
+    timeLeft = 30;
+    $("user-answer").value = "";
+    $("user-answer").disabled = false;
+    $("btn-rest").disabled = false;
+    $("btn-rest").textContent = "Rest your case";
+    const p = activePersona();
+    $("opponent-status-text").textContent = p.name + " is thinking of an answer";
+    $("opponent-status").style.color = p.color;
+    $("clock-fill").style.width = "100%";
+    $("clock-fill").style.background = "var(--gold)";
+    $("clock-num").textContent = "30";
+    renderRoster();
+    showSub("sub-playing");
+    $("user-answer").focus();
+
+    generateOpponentAnswer(p, currentQuestion)
+      .then(text => { aiAnswerText = text; aiDone = true; onAIReady(); })
+      .catch(err => { aiAnswerText = "(No answer — " + (err.message || "error") + ")"; aiDone = true; onAIReady(); });
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(tick, 1000);
+  }
+
+  function onAIReady(){
+    if (userLocked){ proceedIfReady(); }
+    else { $("opponent-status-text").textContent = activePersona().name + " has locked in an answer"; }
+  }
+
+  function tick(){
+    timeLeft -= 1;
+    $("clock-num").textContent = String(Math.max(timeLeft,0));
+    $("clock-fill").style.width = (Math.max(timeLeft,0)/30*100) + "%";
+    if (timeLeft <= 10) $("clock-fill").style.background = "var(--crimson)";
+    if (timeLeft <= 0){ clearInterval(timerInterval); lockUserAnswer(); }
+  }
+
+  function lockUserAnswer(){
+    if (userLocked) return;
+    userLocked = true;
+    clearInterval(timerInterval);
+    userAnswerText = $("user-answer").value.trim();
+    $("user-answer").disabled = true;
+    $("btn-rest").disabled = true;
+    $("btn-rest").textContent = "Case rested";
+    if (!aiDone) $("opponent-status-text").textContent = "Waiting on " + activePersona().name + "…";
+    proceedIfReady();
+  }
+  $("btn-rest").addEventListener("click", lockUserAnswer);
+
+  function proceedIfReady(){
+    if (userLocked && aiDone) renderReveal();
+  }
+
+  function renderReveal(){
+    const p = activePersona();
+    $("reveal-user-answer").textContent = userAnswerText || "(No answer submitted before the bell.)";
+    $("reveal-user-answer").classList.toggle("empty", !userAnswerText);
+    $("reveal-ai-name").textContent = p.name;
+    $("reveal-ai-name").style.color = p.color;
+    $("reveal-ai-card").style.borderLeftColor = p.color;
+    $("reveal-ai-answer").textContent = aiAnswerText;
+    $("reveal-error").classList.add("hidden");
+    $("btn-ruling").disabled = false;
+    chatHistoryPlain.push({ name:"You", text: userAnswerText || "(no answer submitted)" });
+    chatHistoryPlain.push({ name: p.name, text: aiAnswerText });
+    showSub("sub-reveal");
+  }
+
+  $("btn-ruling").addEventListener("click", async () => {
+    $("btn-ruling").disabled = true;
+    showSub("sub-loading-verdict");
+    try{
+      const userIsA = Math.random() < 0.5;
+      const answerA = userIsA ? (userAnswerText || "(No answer submitted.)") : aiAnswerText;
+      const answerB = userIsA ? aiAnswerText : (userAnswerText || "(No answer submitted.)");
+      const raw = await getJudgment(currentQuestion, answerA, answerB);
+      renderVerdict(raw, userIsA);
+    } catch(e){
+      showSub("sub-reveal");
+      $("reveal-error").textContent = e.message || "Couldn't reach the judge. Try again.";
+      $("reveal-error").classList.remove("hidden");
+      $("btn-ruling").disabled = false;
+    }
+  });
+
+  function renderVerdict(raw, userIsA){
+    const p = activePersona();
+    const winnerMatch = raw.match(/WINNER:\s*(A|B|TIE)/i);
+    const reasoningMatch = raw.match(/REASONING:\s*([\s\S]*)/i);
+    const winnerCode = winnerMatch ? winnerMatch[1].toUpperCase() : "TIE";
+    const reasoning = reasoningMatch ? reasoningMatch[1].trim() : raw;
+
+    const el = $("verdict-winner");
+    const btn = $("btn-continue");
+
+    if (winnerCode === "TIE"){
+      lastOutcome = "tie";
+      el.textContent = "A tie";
+      el.style.color = "var(--parchment)";
+      btn.textContent = "Run it back";
+      fireChatLine(p, "The round was ruled a tie. React to that in one short line.");
+    } else if ((winnerCode === "A" && userIsA) || (winnerCode === "B" && !userIsA)){
+      lastOutcome = "win";
+      el.textContent = "You";
+      el.style.color = "var(--gold)";
+      btn.textContent = (activeIndex + 1 >= roster.length) ? "Claim victory" : "Next challenger";
+      fireChatLine(p, "You just lost the round to the human player. React in one short line, in character — could be a concession, sour grapes, whatever fits your vibe.");
+    } else {
+      lastOutcome = "loss";
+      el.textContent = p.name;
+      el.style.color = p.color;
+      btn.textContent = "Restart the gauntlet";
+      fireChatLine(p, "You just beat the human player this round. Gloat or react in one short line, in character.");
+    }
+    $("verdict-reasoning").textContent = reasoning;
+    showSub("sub-verdict");
+  }
+
+  $("btn-continue").addEventListener("click", () => {
+    $("btn-continue").disabled = true;
+    try{
+      if (lastOutcome === "tie"){
+        round += 1;
+        startRound().finally(() => { $("btn-continue").disabled = false; });
+      } else if (lastOutcome === "win"){
+        const defeated = activePersona();
+        defeated.defeated = true;
+        round += 1;
+        activeIndex += 1;
+        if (activeIndex >= roster.length){
+          renderClearedDocket();
+          $("btn-continue").disabled = false;
+        } else {
+          const next = activePersona();
+          fireChatLine(next, "The previous challenger just lost. You're up next — say something short to the player before your round starts.");
+          startRound().finally(() => { $("btn-continue").disabled = false; });
+        }
+      } else if (lastOutcome === "loss" || lastOutcome === "victory"){
+        resetGauntlet();
+        $("btn-continue").disabled = false;
+      }
+    } catch(e){
+      $("btn-continue").disabled = false;
+    }
+  });
+
+  function renderClearedDocket(){
+    lastOutcome = "victory";
+    renderRoster();
+    $("verdict-ruling-for").textContent = "The gauntlet has been cleared by";
+    $("verdict-winner").textContent = "You";
+    $("verdict-winner").style.color = "var(--gold)";
+    $("verdict-reasoning").textContent = "Every challenger on the docket has been beaten. Start a fresh gauntlet whenever you're ready.";
+    $("btn-continue").textContent = "Play again";
+    appendChat("", "", "The docket has been cleared. All rise.", { system:true });
+    showSub("sub-verdict");
+  }
+
+  // ---- Player chat ----
+  function sendPlayerChat(){
+    const input = $("chat-input");
+    const text = input.value.trim();
+    if (!text) return;
+    appendChat("You", "var(--gold)", text);
+    input.value = "";
+    const p = activePersona();
+    if (p){
+      fireChatLine(p, 'The player just said in chat: "' + text + '". React to it in one short line, in character.');
+    }
+  }
+  $("btn-chat-send").addEventListener("click", sendPlayerChat);
+  $("chat-input").addEventListener("keydown", e => { if (e.key === "Enter") sendPlayerChat(); });
+
+})();
+</script>
+
+</body>
+</html>
